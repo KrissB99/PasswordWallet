@@ -1,0 +1,73 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock title %}
+
+{% block body %}
+
+<div class="position-absolute top-50 start-50 translate-middle w-25">
+    <div class="card shadow-lg">
+
+            <div class="card-body" x-data="data">
+
+                <div class="card-title mb-3"><h3 class="text-center">Login</h3></div>
+                <hr>
+                
+                <div class="mb-3">
+                    <input type="text" class="form-control required-input shadow" id="login" x-model="request.login" placeholder="Login" required>
+                </div>
+
+                <div class="mb-3">
+                    <input type="password" class="form-control required-input shadow" name="password1" id="password" x-model="request.password" placeholder="Password" required>
+                </div>
+
+                <div class="text-center">
+                    <button type="subimt" class="btn btn-outline-success rounded-pill shadow w-100" x-show="request.login && request.password" @click="logIn()"><i class="bi bi-person-plus"></i> Log in</button>
+                </div>
+
+            </div>
+
+        </div>
+     </div>
+</div>
+
+
+<script>
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('data', () => ({
+            request: {'login': '', 'password': ''},
+            async logIn() {
+
+                if (this.request.login.length <= 3 ) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Login is too short!'}) }
+                else if (this.request.login.length > 20) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Login is too long!'}) }
+                else if (this.request.password.length < 8) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Password is too short!'}) }
+                else {
+                        // Send to crud
+                        const response = await fetch(`/check-user-credentials`, {
+                            method: 'POST',
+                            body: JSON.stringify( this.request ),
+                            headers: { 'Content-Type': 'application/json' }
+                        })
+                        const data = await response.json()
+                        
+                        // Show alert
+                        if (data.detail) {
+                            this.request.login = ''
+                            this.request.password = ''
+                            Swal.fire('Success!', 'Logged in successfully!', 'success')
+                        }
+                        else {
+                            Swal.fire('Sorry!', 'Something went wrong! Please try again.', 'danger')
+                        }
+
+                        window.location.href = 'password-wallet'
+                }
+               
+            },
+            
+        }
+        ))
+    })
+
+</script>
+
+{% endblock body %}

@@ -1,0 +1,126 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock title %}
+
+{% block body %}
+
+<div class="position-absolute top-50 start-50 translate-middle w-25">
+    <div class="card shadow-lg">
+
+        <div class="card-body" x-data="data" @submit.prevent="createUser()">
+
+            <div class="card-title mb-3"><h3 class="text-center">Register</h3></div>
+            <hr>
+            
+            <!-- Login -->
+            <div class="mb-3">
+                <input type="text" class="form-control required-input" placeholder="Login" x-model="request.login" required>
+
+                <small class="text-warning m-2" x-show="request.login.length >= 1 && request.login.length <= 3">
+                    <i class="bi bi-info-circle-fill"></i> Login is too short
+                </small>
+                <small class="text-danger m-2" x-show="request.login.length >= 20">
+                    <i class="bi bi-info-circle-fill"></i> Login is too long
+                </small>
+                <small class="text-danger m-2" x-show="request.login == ''">
+                    <i class="bi bi-info-circle-fill"></i> Login field must be filled in
+                </small>
+            </div>
+
+            <!-- Password 1 -->
+            <div class="mb-3">
+                <input type="password" class="form-control required-input" x-model="request.password_hash" placeholder="Password" required>
+                
+                <small class="text-danger m-2" x-show="request.password_hash.length < 8">
+                    <i class="bi bi-info-circle-fill"></i> Password has to have at least 8 characters
+                </small>
+            </div>
+
+            <!-- Password 2 -->
+            <div class="mb-3">
+                <input type="password" class="form-control required-input" x-model="request.password2" placeholder="Confirm password" required>
+                <small class="text-danger m-2" x-show="request.password2 == ''">
+                    <i class="bi bi-info-circle-fill"></i> Please confirm the password
+                </small>
+                <small class="text-danger m-2" x-show="request.password2 != '' && request.password2 != request.password_hash">
+                    <i class="bi bi-info-circle-fill"></i> Passwords do not match
+                </small>
+            </div>
+
+            <hr>
+
+            <!-- Hashing password choice -->
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="radio" id="radio1" value="true">
+                    <label class="form-check-label" for="radio1">
+                        Password hashed with SHA12
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="radio" id="radio2" value="false" checked>
+                    <label class="form-check-label" for="radio2">
+                        Password hashed with HMAC
+                    </label>
+                  </div>
+            </div>
+
+            <div class="mb-3">
+               <button class="btn btn-outline-success shadow rounded-pill w-100" @click="createUser()" x-show="request.login && request.password_hash && request.password2">
+                    <i class="bi bi-check-lg"></i> Register
+                </button>
+            </div>
+
+        </div>
+     </div>
+</div>
+
+<script>
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('data', () => ({
+            request: {'login': '', 
+                      'password_hash': '', 
+                      'password2': '', 
+                      'is_password_kept_as_hash': true},
+            async createUser() {
+                // Check radio
+                radio1Button = document.querySelectorAll('input[name="radio"]')[0]
+                if (radio1Button.checked) { this.request.is_password_kept_as_hash = true }
+                else { this.request.is_password_kept_as_hash = false }
+
+                if (this.request.login.length <= 3 ) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Login is too short!'}) }
+                else if (this.request.login.length > 20) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Login is too long!'}) }
+                else if (this.request.password_hash.length < 8) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Password is too short!'}) }
+                else if (this.request.password2 != this.request.password_hash) { Swal.fire({icon: 'error', title: 'Oops!', text: 'Passwords do not match!'}) }
+                else {
+                        // Send to crud
+                        const response = await fetch(`/users`, {
+                            method: 'POST',
+                            body: JSON.stringify( this.request ),
+                            headers: { 'Content-Type': 'application/json' }
+                        })
+                        const data = await response.json()
+
+                        // Show alert
+                        if (response.ok) {
+                            this.request.login = ''
+                            this.request.password_hash = ''
+                            this.password2 = ''
+                            this.is_password_kept_as_hash = true
+                            Swal.fire('Success!', 'User added successfully!', 'success')
+                        }
+                        else {
+                            Swal.fire('Sorry!', 'Something went wrong! Please try again.', 'danger')
+                        }
+                }
+                
+               
+            },
+            
+        }
+        ))
+    })
+
+</script>
+
+{% endblock body %}

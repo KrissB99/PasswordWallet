@@ -1,0 +1,161 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock title %}
+{% block body %}
+
+<div class="position-absolute top-50 start-50 translate-middle w-75" x-data="data">
+
+    <div class="text-end" x-show="!show" @click="show = true">
+        <button class="btn btn-outline-success btn-sm rounded-pill shadow"><i class="bi bi-plus-lg"></i></button>
+    </div>
+
+    <div class="text-end" x-show="show" @click="show = false">
+        <i class="btn btn-sm btn-outline-danger rounded-pill bi bi-x-lg"></i>
+    </div>
+
+    <div class="card shadow-lg w-50 mx-auto mt-3" x-show="show">
+
+        <div class="card-body">  
+
+
+            <div class="input-group mb-3 text-center">
+                <input type="text" class="form-control required-input shadow mx-2" x-model="request.login" placeholder="Login" required>
+                <input type="text" class="form-control required-input shadow mx-2" x-model="request.description" placeholder="Website name" required>
+            </div>
+
+            <div class="mb-3">
+                <input type="text" class="form-control required-input mx-2 shadow" id="web_address" x-model="request.web_address" placeholder="Website address" required>
+            </div>
+
+            <div class="mb-3">
+                <input type="password" class="form-control required-input mx-2 shadow" id="password" x-model="request.password" placeholder="Password" required>
+            </div>
+
+            <div class="text-center">
+                <button type="subimt" class="btn btn-outline-success rounded-pill shadow w-100" @click="addPassword()"><i class="bi bi-person-plus"></i> Add password</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-lg mt-3">
+
+        <div class="card-body overflow-auto" style="max-height: 50vh;">  
+
+            <div class="card-title mb-3"><h3 class="text-center">Password wallet</h3></div>
+            <hr>
+
+            <template x-if="passwords.length != 0">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Nr</th>
+                        <th>Website</th>
+                        <th>Login</th>
+                        <th style="width: 15%">Options</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(password, i) in passwords">
+                            <tr>
+                                <th x-text="i + 1"></th>
+                                <td x-text="password.description"></td>
+                                <td x-text="password.login"></td>
+                                <td class="text-center">
+                                    <button class="btn btn-outline-success btn-sm rounded-pill shadow" @click="copyPassword(password)"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-outline-warning btn-sm rounded-pill shadow" @click="modifyPassword(password)" disabled><i class="bi bi-tools"></i></button>
+                                    <button class="btn btn-outline-danger btn-sm rounded-pill shadow" @click="deletePassword(password.id)"><i class="bi bi-x-lg"></i></button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+
+            <template x-if="passwords.length == 0">
+                <div class="alert text-center" role="alert">
+                    <h4 class="alert-heading">There is no passwords to see 😥</h4>
+                    <p>Added passwords will apear here.</p>
+                    <hr>
+                    <p class="mb-0">Whenever you need help. Please contact us.</p>
+                  </div>
+            </template>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('data', () => ({
+            user_id: "{{ session['id'] }}",
+            passwords: [],
+
+            show: false,
+            request: {'login': '', 'password': '', 'description': '', 'web_address': ''},
+            init() {
+                this.getPasswords() 
+            },
+            async getPasswords() {
+
+                const response = await fetch('/passwords')
+                const data = await response.json()
+                this.passwords = data.filter(element => element.user_id == this.id_user)
+                if (this.passwords.length == 0) { this.show = true }
+            },
+            async addPassword() {
+                // Send to crud
+                const response = await fetch(`/passwords`, {
+                    method: 'POST',
+                    body: JSON.stringify( this.request ),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                const data = await response.json()
+                this.getPasswords()
+                // Show alert
+                if (response.ok) {
+                    this.request.login = ''
+                    this.request.password = ''
+                    this.request.description = ''
+                    this.request.web_address = ''
+                    this.show = false
+                    Swal.fire('Success!', 'Password added successfully!', 'success')
+                }
+                else {
+                    Swal.fire('Sorry!', 'Something went wrong! Please try again.', 'danger')
+                }
+            },
+            async deletePassword(passwordId) {
+                // Send to crud
+                const response = await fetch(`/passwords/${passwordId}`, {method: 'DELETE'})
+                const data = await response.json()
+
+                // Show alert
+                if (response.ok) {
+                    Swal.fire('Success!', 'Password deleted successfully!', 'success')
+                }
+                else {
+                    Swal.fire('Sorry!', 'Something went wrong! Please try again.', 'danger')
+                }
+            },
+            copyPassword(password) {
+                // Send to crud
+                const clipboardText = navigator.clipboard.writeText(password.password)
+
+                // Show alert
+                if (clipboardText) {
+                    Swal.fire('Success!', 'Password copied successfully!', 'success')
+                }
+                else {
+                    Swal.fire('Sorry!', 'Something went wrong! Please try again.', 'danger')
+                }
+            }
+        }
+        ))
+    })
+
+</script>
+
+
+{% endblock body %}
