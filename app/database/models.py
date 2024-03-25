@@ -80,8 +80,8 @@ class User(db.Model, DBManager):
             str: salt
         """
         salt = bcrypt.gensalt()
-        peppered_password += PEPPER
-        return bcrypt.hashpw(peppered_password.encode('utf-8'), salt), salt
+        password += PEPPER
+        return bcrypt.hashpw(password.encode('utf-8'), salt), salt
     
     @classmethod
     def check_password(cls, login: int, password: str) -> bool:
